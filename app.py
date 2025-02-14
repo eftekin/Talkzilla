@@ -2,6 +2,16 @@ import streamlit as st
 import tiktoken
 from openai import OpenAI
 
+# Page configuration
+st.set_page_config(
+    page_title="Talkzilla",
+    page_icon="🦖",
+    initial_sidebar_state="expanded",
+    menu_items={
+        "About": "# Talkzilla 🦖\nA chatbot that roars with fun conversations! Built with Streamlit and Gemini API."
+    },
+)
+
 
 def count_tokens(text: str) -> int:
     encoding = tiktoken.get_encoding("cl100k_base")
