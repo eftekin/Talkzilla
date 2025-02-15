@@ -23,7 +23,12 @@ if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gemini-2.0-flash"
 
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": "Hello! I'm Talkzilla 🦖, here to roar with fun conversations! How can I assist you today?",
+        }
+    ]
 
 if "total_tokens" not in st.session_state:
     st.session_state.total_tokens = 0
@@ -52,8 +57,9 @@ st.caption("A chatbot that roars with fun conversations!")
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        token_count = count_tokens(message["content"])
-        st.caption(f"Tokens used: {token_count}")
+        if len(st.session_state.messages) != 1:
+            token_count = count_tokens(message["content"])
+            st.caption(f"Tokens used: {token_count}")
 
 if prompt := st.chat_input(""):
     if not gemini_api_key:
