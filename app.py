@@ -63,6 +63,47 @@ st.session_state["openai_model"] = model_choice
 st.title("Talkzilla 🦖")
 st.caption("A chatbot that roars with fun conversations!")
 
+# Add file upload component
+uploaded_file = st.file_uploader(
+    "Upload a file to discuss", type=["txt", "pdf", "docx"]
+)
+
+# Initialize file content in session state if not exists
+if "current_file_content" not in st.session_state:
+    st.session_state.current_file_content = None
+
+if uploaded_file:
+    try:
+        if uploaded_file.type == "text/plain":
+            file_content = uploaded_file.read().decode()
+        elif uploaded_file.type == "application/pdf":
+            import PyPDF2
+
+            pdf_reader = PyPDF2.PdfReader(uploaded_file)
+            file_content = ""
+            for page in pdf_reader.pages:
+                file_content += page.extract_text()
+        elif (
+            uploaded_file.type
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ):
+            import docx
+
+            doc = docx.Document(uploaded_file)
+            file_content = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+
+        # Store file content in session state
+        st.session_state.current_file_content = file_content
+
+        # Display file content in an expander
+        with st.expander(f"📄 File Content: {uploaded_file.name}"):
+            st.text_area("File content", file_content, height=300, disabled=True)
+            token_count = count_tokens(file_content)
+            st.caption(f"Tokens in file: {token_count}")
+        st.success(f"File uploaded successfully!")
+    except Exception as e:
+        st.error(f"Error processing file: {e}")
+
 # Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -85,6 +126,18 @@ if prompt := st.chat_input(""):
             base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         )
 
+        # Prepare messages including file content if available
+        messages_to_send = []
+        if st.session_state.current_file_content:
+            messages_to_send.append(
+                {
+                    "role": "user",
+                    "content": f"Here's the content of the uploaded file:\n\n{st.session_state.current_file_content}",
+                }
+            )
+        messages_to_send.extend(st.session_state.messages)
+        messages_to_send.append({"role": "user", "content": prompt})
+
         # Calculate tokens and update chat history for user message
         prompt_tokens = count_tokens(prompt)
         st.session_state.total_tokens += prompt_tokens
@@ -101,10 +154,7 @@ if prompt := st.chat_input(""):
                 # Create streaming chat completion
                 stream = client.chat.completions.create(
                     model=st.session_state["openai_model"],
-                    messages=[
-                        {"role": m["role"], "content": m["content"]}
-                        for m in st.session_state.messages
-                    ],
+                    messages=messages_to_send,
                     stream=True,
                 )
             # Display streaming response and update token count
