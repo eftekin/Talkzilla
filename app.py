@@ -100,7 +100,7 @@ if uploaded_file:
             st.text_area("File content", file_content, height=300, disabled=True)
             token_count = count_tokens(file_content)
             st.caption(f"Tokens in file: {token_count}")
-        st.success(f"File uploaded successfully!")
+        st.success("File uploaded successfully!")
     except Exception as e:
         st.error(f"Error processing file: {e}")
 
